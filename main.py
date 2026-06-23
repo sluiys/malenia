@@ -1,8 +1,10 @@
 # Some important things to say here: Im retrieve alot of ideas from my favorite softwares, like: Chris Titus Wintool, Revo Uninstaller, TweakUI...
-# 
+# I coded based on some scripts as well, like the AI remover from: https://github.com/zoicware/RemoveWindowsAI (i didnt include the CBS manipulation {component-based servicing}, this could break 
+# the sistem removing some important stuff, ofc u can costumize it in their script but here im not going to do that because Malenia has already alot of working features (maybe one day))
 # 
 # # Lets import the detect module
 from detect import analyze_gpu, detect_gpu
+# Importing the scraper module
 from scraper import search_driver
 # Importing the newly created software installer module
 from installer import prompt_software_selection
