@@ -1,18 +1,19 @@
 import os
-import urllib.error
-import urllib.request
 import socket
 import ssl
+import urllib.error
+import urllib.request
 
 import requests
 from bs4 import BeautifulSoup
-
 
 # im watching FURIA x AURORA rn, FURIA won omg, thats amaizing.
 # Big fan of Counter Strike 2 :)
 # Spirit 1 x Falcons 1
 # Theyre in DUST 2 now, decider map for the grand final, 7 to 7 rounds... lets see
+# Update: 3 Falcons - 0 Furia (i forgot to say it here)
 # FURIA lost in the finals, im sad :(
+
 
 def scrape_nvidia():
     """
@@ -84,6 +85,7 @@ def scrape_nvidia():
         print(f"[Scraper] A network error occurred during scraping: {e}")
         return None
 
+
 def scrape_amd():
     """
     Connects to the official AMD Driver Support website, parses the HTML content,
@@ -92,46 +94,57 @@ def scrape_amd():
     """
     print("\n[Scraper] Entering AMD website to search for the Auto-Detect installer...")
     url = "https://www.amd.com/en/support/download/drivers.html"
-    
+
     # same bla bla bla, but more "security" from AMD's website, theyre more likely to block requests from generic user-agents
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
-        "Accept-Language": "en-US,en;q=0.5"
+        "Accept-Language": "en-US,en;q=0.5",
     }
-    
+
     try:
         response = requests.get(url, headers=headers, timeout=10)
         if response.status_code == 200:
             soup = BeautifulSoup(response.content, "html.parser")
             driver_link = None
-            
+
             # Iterating through all links on the AMD support page
             for link in soup.find_all("a", href=True):
                 href = link["href"]
-                
+
                 # Matching criteria: Must contain 'minimalsetup' or 'auto-detect' or 'amd-software' and end with '.exe'
-                if ("minimalsetup" in href.lower() or "auto-detect" in href.lower() or "amd-software" in href.lower()) and href.endswith(".exe"):
+                if (
+                    "minimalsetup" in href.lower()
+                    or "auto-detect" in href.lower()
+                    or "amd-software" in href.lower()
+                ) and href.endswith(".exe"):
                     driver_link = href
                     break
-            
+
             if driver_link:
-                print(f"[Scraper] Successfully found AMD target installer link: {driver_link}")
+                print(
+                    f"[Scraper] Successfully found AMD target installer link: {driver_link}"
+                )
                 return driver_link
             else:
-                print("[Scraper] Warning: No AMD installer link matched the criteria in the HTML.")
+                print(
+                    "[Scraper] Warning: No AMD installer link matched the criteria in the HTML."
+                )
                 return None
         else:
-            print(f"[Scraper] Error: Failed to access AMD page. Status code: {response.status_code}")
+            print(
+                f"[Scraper] Error: Failed to access AMD page. Status code: {response.status_code}"
+            )
             return None
     except requests.exceptions.RequestException as e:
         print(f"[Scraper] A network error occurred during AMD scraping: {e}")
         return None
 
+
 def scrape_intel():
     """
     Validates the persistent endpoint for the Intel Driver & Support Assistant.
-    Since Intel provisions a direct static endpoint that directly acts as the binary 
+    Since Intel provisions a direct static endpoint that directly acts as the binary
     stream source, we securely return the validated destination endpoint.
     """
     print("\nValidating Intel direct installer endpoint repository...")
@@ -141,16 +154,23 @@ def scrape_intel():
     }
     try:
         # Performing a fast HEAD request to check availability before launching heavy transport operations
-        response = requests.head(driver_link, headers=headers, allow_redirects=True, timeout=10)
+        response = requests.head(
+            driver_link, headers=headers, allow_redirects=True, timeout=10
+        )
         if response.status_code == 200:
-            print(f"[Scraper] Successfully validated Intel persistent link: {driver_link}")
+            print(
+                f"[Scraper] Successfully validated Intel persistent link: {driver_link}"
+            )
             return driver_link
         else:
-            print(f"[Scraper] Error: Intel endpoint answered with unusual status code: {response.status_code}")
+            print(
+                f"[Scraper] Error: Intel endpoint answered with unusual status code: {response.status_code}"
+            )
             return None
     except requests.exceptions.RequestException as e:
         print(f"[Scraper] A network error occurred during Intel verification: {e}")
         return None
+
 
 def execute_driver_download(driver_link, target_directory, brand):
     """
@@ -158,55 +178,69 @@ def execute_driver_download(driver_link, target_directory, brand):
     saving it into the user-defined target directory.
     """
 
+    #So, INTEL drivers had problem, whenever i tried do download them, the file name NEVER came correctly, so i have to manually define this if/else to define the file name based on the brand var.
     if brand == "INTEL":
         file_name = "Intel-Driver-and-Support-Assistant-Installer.exe"
     else:
         file_name = driver_link.split("/")[-1]
-        
+
     full_destination_path = os.path.join(target_directory, file_name)
 
     print(f"\n[Download] Commencing download of {file_name}...")
     print(f"[Download] Saving file to target location: {full_destination_path}")
-    
+
     try:
         ssl_context = ssl._create_unverified_context()
-        
+
         # Creating a specific Request object to inject complete browser headers
         # This simulates a real user click from the AMD driver page to bypass silent drops
         request_object = urllib.request.Request(
             driver_link,
             headers={
-                            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                            'Referer': 'https://www.intel.com/' if brand == "INTEL" else 'https://www.amd.com/',
-                            'Accept': '*/*',
-                            'Connection': 'keep-alive'
-                }
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                "Referer": "https://www.intel.com/"
+                if brand == "INTEL"
+                else "https://www.amd.com/",
+                "Accept": "*/*",
+                "Connection": "keep-alive",
+            },
         )
-        
+
         # Opening the connection with a strict 15-second timeout to prevent infinite freezing
         print("[Download] Connecting to the remote binary repository...")
-        with urllib.request.urlopen(request_object, timeout=15, context=ssl_context) as response:
+        with urllib.request.urlopen(
+            request_object, timeout=15, context=ssl_context
+        ) as response:
             # Creating or overwriting the target file in binary mode
-            with open(full_destination_path, 'wb') as local_file:
+            with open(full_destination_path, "wb") as local_file:
                 # Reading the stream in small chunks (8KB) to ensure low RAM footprint
                 while True:
                     chunk = response.read(8192)
                     if not chunk:
                         break
                     local_file.write(chunk)
-                    
-        print(f"[Success] Download complete! File securely saved at: {os.path.abspath(full_destination_path)}")
+
+        print(
+            f"[Success] Download complete! File securely saved at: {os.path.abspath(full_destination_path)}"
+        )
         return os.path.abspath(full_destination_path)
-        
+
     except urllib.error.URLError as e:
-        print(f"[Download Error] Network or timeout failure during urllib transport: {e.reason}")
+        print(
+            f"[Download Error] Network or timeout failure during urllib transport: {e.reason}"
+        )
         return None
     except socket.timeout:
-        print("[Download Error] Connection timed out. AMD server refused to stream the file data.")
+        print(
+            "[Download Error] Connection timed out. AMD server refused to stream the file data."
+        )
         return None
     except Exception as e:
-        print(f"[Download Error] An unexpected error occurred while writing the file: {e}")
+        print(
+            f"[Download Error] An unexpected error occurred while writing the file: {e}"
+        )
         return None
+
 
 def manage_download_path(driver_link):
     """
@@ -295,6 +329,7 @@ def manage_download_path(driver_link):
 
     # If there is no conflict or the conflict was resolved by deletion, proceed to download
     return chosen_directory
+
 
 def search_driver(brand):
     """
