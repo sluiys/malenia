@@ -14,6 +14,16 @@ from uninstaller import prompt_software_removal
 from tweaks import prompt_tweaks_menu
 # importing the peripherals module
 from peripherals import prompt_peripherals_menu
+# I HAVE A ICON NOW!!!!!!!
+import tkinter as tk
+
+window = tk.Tk()
+window.title("Malenia")
+
+icon = tk.PhotoImage(file="malenia.ico")
+window.iconphoto(True, icon)
+window.iconbitmap("malenia.ico")
+
 
 def display_menu():
     """
