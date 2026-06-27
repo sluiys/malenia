@@ -167,16 +167,19 @@ def clean_safe_leftovers(app_name):
 
     if choice == "y":
         for folder in found_leftovers:
-            try:
-                print(f"[Cleanup] Shredding directory: {folder}...")
-                # shutil.rmtree obliterates a folder and EVERYTHING inside it. Powerful and dangerous.
-                shutil.rmtree(folder)
-                print("[Cleanup] Directory destroyed.")
-            except Exception as e:
-                # If a file inside is currently being used by Windows, it will throw an error.
-                print(
-                    f"[Cleanup Error] Could not delete {folder}. It might be locked by the OS. Error: {e}"
-                )
+            if os.path.exists(folder):
+                try:
+                    print(f"[Cleanup] Shredding directory: {folder}...")
+                    # shutil.rmtree obliterates a folder and EVERYTHING inside it. Powerful and dangerous.
+                    shutil.rmtree(folder)
+                    print("[Cleanup] Directory destroyed.")
+                    
+                except FileNotFoundError:
+                    print(
+                        f"[Cleanup] Directory already deleted: {folder}."
+                    )
+            else:
+                print(f"[Cleanup] Directory {folder} does not exist, skipping...")
     else:
         print("[Action Log] Leftover cleanup bypassed by the user.")
 

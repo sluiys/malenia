@@ -134,7 +134,6 @@ SOFTWARE_CATALOG = {
         {"name": "TeraBox", "id": "Flextech.TeraBox"}
     ],
     "Utilities": [
-        {"name": "Spotify", "id": "Spotify.Spotify"},
         {"name": "1Password", "id": "1Password.1Password"},
         {"name": "7-Zip", "id": "7zip.7zip"},
         {"name": "NanaZip", "id": "M2Team.NanaZip"},
@@ -175,30 +174,54 @@ def verify_winget_availability():
 def execute_package_install(package_id, package_name):
     """
     Triggers the installation of a specific package using Winget.
-    Includes flags to silently accept agreements and prevent interactive prompts.
+    Dynamically drops Administrator privileges for user-scope restricted apps using 'runas'.
     """
     print(f"\n[Installer] Proceeding with the installation of: {package_name} ({package_id})")
     
+    # List of applications known to conflict with Administrator contexts
+    USER_SCOPE_APPS = [
+        "Discord.Discord", 
+        "GitHub.GitHubDesktop", 
+        "WhatsApp.WhatsApp", 
+        "ItchIo.Itch"
+    ]
+    
     try:
-        # Winget execution command with silent agreement flags (we dont want the user to be prompted...)
-        command = [
-            "winget", "install", 
-            "--id", package_id, 
-            "--exact", 
-            "--accept-package-agreements", 
-            "--accept-source-agreements"
-        ]
-
-        # So Spotify needs the context window to be set to user scope, not the adminstrador one.
-        # But the software needs alot of admin permissions to run properly, so we need to run it as user when installing spotify specifically.
-        if package_id == "Spotify.Spotify":
-            command.extend(["--scope", "user"])
+        if package_id in USER_SCOPE_APPS:
+            print(f"[System] {package_name} requires a non-admin environment. Spawning isolated basic-user terminal...")
+            # I tried so many times to get Spotify to install in user mode, but it just won't. I gave up and moved on, just some apps needs to be installed in user mode now, all of them (06/27/2026) works just fine.
+            # 
+            # This command string opens another terminal with only user-privilage to install the packages, so the installer doesn't need to run as Administrator mode. After download, wait at least 25 seconds to the proper installation.
+            command_string = f'runas /trustlevel:0x20000 "cmd.exe /c winget install --id {package_id} --exact --accept-package-agreements --accept-source-agreements & echo [System] Waiting for background setup to finish... & timeout /t 25 /nobreak >nul"'
             
-        subprocess.run(command, check=True)
-        print(f"[Success] {package_name} was successfully installed.")
-    except subprocess.CalledProcessError:
-        print(f"[Error] Winget encountered an error while installing {package_name}. It might be already installed or the ID changed.")
+            # Replaced the list with a raw string and added 'shell=True' so Windows reads the quotes correctly.
+            subprocess.run(command_string, shell=True, check=True)
+            print(f"[Success] {package_name} isolated installation triggered successfully.")
+            
+        else:
+            # For 95% of normal apps, we run normally with Admin context
+            command = [
+                "winget", "install", 
+                "--id", package_id, 
+                "--exact", 
+                "--silent", 
+                "--accept-package-agreements", 
+                "--accept-source-agreements",
+                "--scope", "machine"
+            ]
+            
+            result = subprocess.run(command, capture_output=True, text=True)
+            
+            if result.returncode == 0:
+                print(f"[Success] {package_name} was successfully installed system-wide.")
+            else:
+                error_output = result.stdout.lower() + result.stderr.lower()
+                print(f"[Error] Winget failed to install {package_name}. \nError Details: {error_output}")
 
+    except subprocess.CalledProcessError:
+        print(f"[Error] The isolated terminal failed to process {package_name}.")
+    except Exception as e:
+        print(f"[Critical Error] Unexpected failure within the installation engine for {package_name}: {e}")
 def build_app_mapping():
     """
     Iterates through the catalog, assigns a sequential numeric ID to each software,
