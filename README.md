@@ -1,5 +1,7 @@
 # Malenia Post Format Tool (MaleniaPF)
 
+![MaleniaPF Banner](https://github.com/sluiys/malenia/raw/main/malenia.webp)
+
 MaleniaPF is an automated utility for post-formatting Windows systems. It streamlines driver acquisition, software installation, system cleanup, and OS-level optimizations through a unified Command Line Interface (CLI).
 
 ## Quick Start (One-Liner Execution)
